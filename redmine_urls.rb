@@ -143,7 +143,7 @@ class RedmineUrlsPlugin < Plugin
 			when :wiki:
 				nil
 			when :changeset:
-				'title'
+				nil
 			when :ticket:
 				'title'
 			else
