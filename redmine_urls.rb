@@ -143,9 +143,9 @@ class RedmineUrlsPlugin < Plugin
 			when :wiki:
 				nil
 			when :changeset:
-				'#searchable p'
+				'title'
 			when :ticket:
-				'h2.summary'
+				'title'
 			else
 				warning "Unknown reftype: #{reftype}"; nil
 		end
