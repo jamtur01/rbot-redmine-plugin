@@ -19,7 +19,7 @@ class RedmineUrlsPlugin < Plugin
 		         "slash on the base URL, please.")
 
 	Config.register Config::BooleanValue.new('redmine_urls.https', 
-		:default => [], :requires_restart => false,
+		:default => false, :requires_restart => false,
 		:desc => "Use https to get Redmine urls and tickets, valid values are true and false, defaults to false")
 
 	Config.register Config::BooleanValue.new('redmine_urls.basic_auth',
