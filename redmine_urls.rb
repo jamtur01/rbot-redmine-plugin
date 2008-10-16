@@ -141,7 +141,7 @@ class RedmineUrlsPlugin < Plugin
 	def css_query_for(reftype)
 		case reftype
 			when :wiki:
-				nil
+				'title'
 			when :changeset:
 				nil
 			when :ticket:
