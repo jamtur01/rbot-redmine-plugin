@@ -130,8 +130,8 @@ class RedmineUrlsPlugin < Plugin
 			when /\#(\d+)/:
 				[bug_url(base, $1), :ticket]
 
-        #                when /wiki:(\w+\#?\w+)/:
-        #                        [wiki_url(base, $1), :wiki]
+                        when /wiki:(\w+\#?\w+)/:
+                                [wiki_url(base, $1), :wiki]
 		end
 	end
 
