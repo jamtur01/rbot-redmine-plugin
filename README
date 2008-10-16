@@ -1,0 +1,6 @@
+# redmine_urls crudely updated by James Turnbull 
+# based on trac_urls written by wombie
+# Needs to go in the plugins dir for rbot
+
+Currently Redmine wikis and changesets don't work - as the URL is per project unlike issues
+where the URL is consistent across projects.
