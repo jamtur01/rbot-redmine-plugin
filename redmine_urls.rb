@@ -18,14 +18,22 @@ class RedmineUrlsPlugin < Plugin
 		         "#channel:http://redmine.site/to/use.  Don't put a trailing " +
 		         "slash on the base URL, please.")
 
+         Config.register Config::ArrayValue.new('redmine_urls.projectmap',
+                :default => [], :requires_restart => false,
+                :desc => "A map of channels to Redmine projects to be queried " +
+                         "in that channel.  Format for each entry in the list is " +
+                         "#channel:project.  This setting is needed for wiki and changeset " +
+                         "queries where the project name is embedded in the query " +
+                         "Currently only one project can be monitored per channel.")
+
 	Config.register Config::BooleanValue.new('redmine_urls.https', 
 		:default => false, :requires_restart => false,
 		:desc => "Use https to get Redmine urls and tickets, valid values are true and false, defaults to false")
 
 	Config.register Config::BooleanValue.new('redmine_urls.basic_auth',
 		:default => [], :requires_restart => false,
-		:desc =>	"Use basic http authentification for Redmine urls." +
-							"Needs redmine_urls.basic_auth_username and redmine_urls.basic_auth_password as well to do anything")
+		:desc => "Use basic http authentification for Redmine urls." +
+			 "Needs redmine_urls.basic_auth_username and redmine_urls.basic_auth_password as well to do anything")
 
 	Config.register Config::StringValue.new('redmine_urls.basic_auth_username',
 		:default => [], :requires_restart => false,
@@ -116,22 +124,22 @@ class RedmineUrlsPlugin < Plugin
 	# and a type symbol (one of :changeset, :ticket, or :wiki), as a pair (eg
 	# ['http://blah/ticket/1', :ticket])
 	#
-	def ref_into_url(base, ref)
+	def ref_into_url(base, project, ref)
 		case ref
 			when /\[(\d+)\]/:
-				[rev_url(base, $1), :changeset]
+				[rev_url(base, project, $1), :changeset]
 			
 			when /r(\d+)/:
-				[rev_url(base, $1), :changeset]
+				[rev_url(base, project, $1), :changeset]
 		
                         when /changeset:(\w+)/:
-                                [rev_url(base, $1), :changeset]
+                                [rev_url(base, project, $1), :changeset]
 	
 			when /\#(\d+)/:
-				[bug_url(base, $1), :ticket]
+				[bug_url(base, project, $1), :ticket]
 
                         when /wiki:(\w+\#?\w+)/:
-                                [wiki_url(base, $1), :wiki]
+                                [wiki_url(base, project, $1), :wiki]
 		end
 	end
 
@@ -150,7 +158,14 @@ class RedmineUrlsPlugin < Plugin
 				warning "Unknown reftype: #{reftype}"; nil
 		end
 	end
-	
+
+        # Get the project name for the channel
+        #
+        def project_channel(target)
+               p = @bot.config['redmine_urls.projectmap'].find {|p| p =~ /^#{target}:/ }
+               p.gsub(	/^#{target}:/, '') unless p.nil?
+        end
+
 	# Return the base URL for the channel (passed in as +target+), or +nil+
 	# if the channel isn't in the channelmap.
 	#
@@ -159,16 +174,16 @@ class RedmineUrlsPlugin < Plugin
 		e.gsub(/^#{target}:/, '') unless e.nil?
 	end
 	
-	def rev_url(base_url, num)
-		base_url + '/repositories/revision/puppet/' + num
+	def rev_url(base_url, project, num)
+		base_url + '/repositories/revision/' + project + '/' + num
 	end
 	
-	def bug_url(base_url, num)
+	def bug_url(base_url, project, num)
 		base_url + '/issues/show/' + num
 	end
 	
-	def wiki_url(base_url, page)
-		base_url + '/wiki/' + page
+	def wiki_url(base_url, project, page)
+		base_url + '/wiki/' + project + '/' + page
 	end
 
 	# Turn a string (which is, presumably, a Redmine reference of some sort)
@@ -189,13 +204,19 @@ class RedmineUrlsPlugin < Plugin
 	def expand_reference(ref, channel)
 		debug "Expanding reference #{ref} in #{channel}"
 		base = base_url(channel)
+                project = project_channel(channel)
 
 		# If we're not in a channel with a mapped base URL...
-		return [nil, "I don't know about Redmine URLs for this channel"] if base.nil?
+		return [nil, "I don't know about Redmine URLs for this channel - please add a channelmap for this channel"] if base.nil?
+
+                # If we're in a channel without a mapped project...
+                return [nil, "I don't have a project map for this channel - please add a projectmap for this channel"] if project.nil?
 
 		debug "Base URL for #{channel} is #{base}"
+                debug "Project for #{channel} is #{project}"
+
 		begin
-			url, reftype = ref_into_url(base, ref)
+			url, reftype = ref_into_url(base, project, ref)
 			css_query = css_query_for(reftype)
 
 			content = unless css_query.nil?
