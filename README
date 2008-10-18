@@ -2,5 +2,17 @@
 # based on trac_urls written by wombie
 # Needs to go in the plugins dir for rbot
 
-Currently Redmine wikis and changesets don't work - as the URL is per project unlike issues
-where the URL is consistent across projects.
+Configuration options (to be placed in conf.yaml)
+
+redmine_urls.channelmap - A map of channels to the base Redmine URL that should be used in that channel.  Format for each entry in the list #channel:http://redmine.site/to/use.  Don't put a trailing slash on the base URL, please.
+
+redmine_urls.projectmap - A map of channels to Redmine projects to be queried in that channel.  
+Format for each entry in the list is #channel:project.  This setting is needed for wiki and changeset queries where the project name is embedded in the query.  Currently only one project can be monitored per channel.
+
+redmine_urls.https - Use https to get Redmine urls and tickets, valid values are true and false, defaults to false
+
+redmine_urls.basic_auth - Use basic http authentification for Redmine urls.  Needs redmine_urls.basic_auth_username and redmine_urls.basic_auth_password as well to do anything
+
+redmine_urls.basic_auth_username - Username for basic http authentification to the Redmine site
+
+redmine_urls.basic_auth_password - Password for basic http authentification to the Redmine site
