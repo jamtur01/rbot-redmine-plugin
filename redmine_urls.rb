@@ -44,6 +44,13 @@ class RedmineUrlsPlugin < Plugin
 		:default => [], :requires_restart => false,
 		:desc => "Password for basic http authentification to the Redmine site")
 
+	Config.register Config::StringValue.new('redmine_urls.auth_user',
+		:default => nil, :requires_restart => false,
+		:desc => "Username for redmine authentification")
+	Config.register Config::StringValue.new('redmine_urls.auth_pass',
+		:default => nil, :requires_restart => false,
+		:desc => "Password for redmine authentification")
+
 	def help(plugin, topic = "")
 		case topic
 			when '':
@@ -251,6 +258,8 @@ class RedmineUrlsPlugin < Plugin
 		b_auth = @bot.config['redmine_urls.basic_auth']
 		b_auth_uname = @bot.config['redmine_urls.basic_auth_username']
 		b_auth_pword = @bot.config['redmine_urls.basic_auth_password']
+		auth_user = @bot.config['redmine_urls.auth_user']
+		auth_pass = @bot.config['redmine_urls.auth_pass']
 		debug("Setup: https: #{ssl}, auth: #{@bot.config['redmine_urls.basic_auth']} username: #{@bot.config['redmine_urls.basic_auth_username']} password: #{@bot.config['redmine_urls.basic_auth_password']}")
 		if @bot.config['redmine_urls.https']
 			port = 443
@@ -260,12 +269,22 @@ class RedmineUrlsPlugin < Plugin
 		http = Net::HTTP.new(parts.host, port)
 		http.use_ssl = @bot.config['redmine_urls.https']
 		debug("use_ssl is #{http.use_ssl}")
+		cookie = nil
+		if auth_user && auth_pass
+			http.start do |h|
+				req = Net::HTTP::Post.new('/login')
+				req.set_form_data(:username => auth_user, :password => auth_pass)
+				resp = h.request(req)
+				cookie = resp['set-cookie']
+			end
+		end
 		http.start do |http| 
 			request = Net::HTTP::Get.new(parts.path)
 			if @bot.config['redmine_urls.basic_auth']
 				debug("trying to use http basic auth")
 				request.basic_auth @bot.config['redmine_urls.basic_auth_username'], @bot.config['redmine_urls.basic_auth_password']
 			end
+			request['cookie'] = cookie if cookie
 			resp = http.request(request)
 		end
 
