@@ -18,13 +18,21 @@ class RedmineUrlsPlugin < Plugin
 		         "#channel:http://redmine.site/to/use.  Don't put a trailing " +
 		         "slash on the base URL, please.")
 
-         Config.register Config::ArrayValue.new('redmine_urls.projectmap',
+        Config.register Config::ArrayValue.new('redmine_urls.projectmap',
                 :default => [], :requires_restart => false,
                 :desc => "A map of channels to Redmine projects to be queried " +
                          "in that channel.  Format for each entry in the list is " +
                          "#channel:project.  This setting is needed for wiki and changeset " +
                          "queries where the project name is embedded in the query " +
                          "Currently only one project can be monitored per channel.")
+
+	Config.register Config::StringValue.new('redmine_urls.auth_user',
+		:default => nil, :requires_restart => false,
+		:desc => "Username for Redmine authentification")
+	
+        Config.register Config::StringValue.new('redmine_urls.auth_pass',
+		:default => nil, :requires_restart => false,
+		:desc => "Password for Redmine authentification")
 
 	def help(plugin, topic = "")
 		case topic
@@ -201,7 +209,7 @@ class RedmineUrlsPlugin < Plugin
 
 			content = unless css_query.nil?
 				# Rip up the page and tell us what you saw
-				page_element_contents(url, css_query)
+				page_element_contents(base, url, css_query)
 			else
 				# We don't know how to get meaningful info out of this page, so
 				# just validate that it actually loads
@@ -224,11 +232,22 @@ class RedmineUrlsPlugin < Plugin
 	# the given +url+, or else raise InvalidRedmineUrl if the page doesn't
 	# respond with 200 OK.
 	#
-	def page_element_contents(url, css_query)
+	def page_element_contents(base, url, css_query)
                 WWW::Mechanize.html_parser = Nokogiri::HTML
                 a = WWW::Mechanize.new { |agent|
                     agent.user_agent_alias = 'Mac Safari'
                 }
+
+                auth_user = @bot.config['redmine_urls.auth_user']
+                auth_pass = @bot.config['redmine_urls.auth_pass']
+                
+                if auth_user && auth_pass
+                    host = base + '/login/'
+                    login = a.get(host).forms[1]
+                    login.username = auth_user
+                    login.password = auth_pass
+                    login = a.submit(login, login.buttons.first)
+                end
 
                 @page  = a.get(url)
                

@@ -14,3 +14,7 @@ redmine_urls.channelmap - A map of channels to the base Redmine URL that should 
 redmine_urls.projectmap - A map of channels to Redmine projects to be queried in that channel.  
 Format for each entry in the list is #channel:project.  This setting is needed for wiki and changeset queries where the project name is embedded in the query.  Currently only one project can be monitored per channel.
 
+redmine_urls.auth_user - Username for basic http authentification to the Redmine site
+
+redmine_urls.auth_pass - Password for basic http authentification to the Redmine site
+
