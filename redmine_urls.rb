@@ -2,10 +2,10 @@
 # based on trac_urls written by wombie
 # Needs to go in the plugins dir for rbot
 
-require 'net/https'
-require 'uri'
+
 require 'rubygems'
-require 'hpricot'
+require 'mechanize'
+require 'nokogiri'
 
 class InvalidRedmineUrl < Exception
 end
@@ -25,31 +25,6 @@ class RedmineUrlsPlugin < Plugin
                          "#channel:project.  This setting is needed for wiki and changeset " +
                          "queries where the project name is embedded in the query " +
                          "Currently only one project can be monitored per channel.")
-
-	Config.register Config::BooleanValue.new('redmine_urls.https', 
-		:default => false, :requires_restart => false,
-		:desc => "Use https to get Redmine urls and tickets, valid values are true and false, defaults to false")
-
-	Config.register Config::BooleanValue.new('redmine_urls.basic_auth',
-		:default => [], :requires_restart => false,
-		:desc => "Use basic http authentification for Redmine urls." +
-			 "Needs redmine_urls.basic_auth_username and redmine_urls.basic_auth_password as well to do anything")
-
-	Config.register Config::StringValue.new('redmine_urls.basic_auth_username',
-		:default => [], :requires_restart => false,
-		:desc => "Username for basic http authentification to the Redmine site")
-
-
-	Config.register Config::StringValue.new('redmine_urls.basic_auth_password',
-		:default => [], :requires_restart => false,
-		:desc => "Password for basic http authentification to the Redmine site")
-
-	Config.register Config::StringValue.new('redmine_urls.auth_user',
-		:default => nil, :requires_restart => false,
-		:desc => "Username for redmine authentification")
-	Config.register Config::StringValue.new('redmine_urls.auth_pass',
-		:default => nil, :requires_restart => false,
-		:desc => "Password for redmine authentification")
 
 	def help(plugin, topic = "")
 		case topic
@@ -219,8 +194,6 @@ class RedmineUrlsPlugin < Plugin
                 # If we're in a channel without a mapped project...
                 return [nil, "I don't have a project map for this channel - please add a projectmap for this channel"] if project.nil?
 
-		debug "Base URL for #{channel} is #{base}"
-                debug "Project for #{channel} is #{project}"
 
 		begin
 			url, reftype = ref_into_url(base, project, ref)
@@ -252,47 +225,18 @@ class RedmineUrlsPlugin < Plugin
 	# respond with 200 OK.
 	#
 	def page_element_contents(url, css_query)
-		parts = URI.parse(url)
-		resp = nil
-		ssl = @bot.config['redmine_urls.https']
-		b_auth = @bot.config['redmine_urls.basic_auth']
-		b_auth_uname = @bot.config['redmine_urls.basic_auth_username']
-		b_auth_pword = @bot.config['redmine_urls.basic_auth_password']
-		auth_user = @bot.config['redmine_urls.auth_user']
-		auth_pass = @bot.config['redmine_urls.auth_pass']
-		debug("Setup: https: #{ssl}, auth: #{@bot.config['redmine_urls.basic_auth']} username: #{@bot.config['redmine_urls.basic_auth_username']} password: #{@bot.config['redmine_urls.basic_auth_password']}")
-		if @bot.config['redmine_urls.https']
-			port = 443
-		else
-			port = 80
-		end
-		http = Net::HTTP.new(parts.host, port)
-		http.use_ssl = @bot.config['redmine_urls.https']
-		debug("use_ssl is #{http.use_ssl}")
-		cookie = nil
-		if auth_user && auth_pass
-			http.start do |h|
-				req = Net::HTTP::Post.new('/login')
-				req.set_form_data(:username => auth_user, :password => auth_pass)
-				resp = h.request(req)
-				cookie = resp['set-cookie']
-			end
-		end
-		http.start do |http| 
-			request = Net::HTTP::Get.new(parts.path)
-			if @bot.config['redmine_urls.basic_auth']
-				debug("trying to use http basic auth")
-				request.basic_auth @bot.config['redmine_urls.basic_auth_username'], @bot.config['redmine_urls.basic_auth_password']
-			end
-			request['cookie'] = cookie if cookie
-			resp = http.request(request)
-		end
+                WWW::Mechanize.html_parser = Nokogiri::HTML
+                a = WWW::Mechanize.new { |agent|
+                    agent.user_agent_alias = 'Mac Safari'
+                }
 
-		debug("Response object is #{resp.inspect} for #{url}")
-		raise InvalidRedmineUrl.new("#{url} returned #{resp.code} #{resp.message}") unless resp.code == '200'
-		elem = Hpricot.parse(resp.body).search(css_query).first
+                @page  = a.get(url)
+               
+                raise InvalidRedmineUrl.new("#{url} returned response code #{page.code}.") unless @page.code == '200'
+		
+                elem = @page.search(css_query).first
 		unless elem
-			warning("Didn't find '#{css_query}' in response #{resp.body}")
+			warning("Didn't find '#{css_query}' in page.")
 			return
 		end
 		debug("Found '#{elem.inner_text}' with '#{css_query}'")
