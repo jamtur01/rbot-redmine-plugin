@@ -173,7 +173,7 @@ class RedmineUrlsPlugin < Plugin
 	end
 	
 	def wiki_url(base_url, project, page)
-		base_url + '/wiki/' + project + '/' + page
+		base_url + '/projects/' + project + '/wiki/' + page
 	end
 
 	# Turn a string (which is, presumably, a Redmine reference of some sort)
