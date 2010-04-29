@@ -157,6 +157,7 @@ class RedmineUrlsPlugin < Plugin
         def project_channel(target)
                p = @bot.config['redmine_urls.projectmap'].find {|p| p =~ /^#{target}:/ }
                p.gsub(	/^#{target}:/, '') unless p.nil?
+               debug "Project map for #{target} is #{p}"
         end
 
 	# Return the base URL for the channel (passed in as +target+), or +nil+
@@ -165,6 +166,7 @@ class RedmineUrlsPlugin < Plugin
 	def base_url(target)
 		e = @bot.config['redmine_urls.channelmap'].find {|c| c =~ /^#{target}:/ }
 		e.gsub(/^#{target}:/, '') unless e.nil?
+                debug "Channel map for #{target} is #{e}"
 	end
 	
 	def rev_url(base_url, project, num)
