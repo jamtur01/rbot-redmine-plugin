@@ -18,3 +18,11 @@ redmine_urls.auth_user - Username for basic http authentification to the Redmine
 
 redmine_urls.auth_pass - Password for basic http authentification to the Redmine site
 
+conf.yaml:
+
+redmine_urls.channelmap:
+- "#channel:http://url/to"
+
+redmine_urls.projectmap:
+- "#channel:project"
+

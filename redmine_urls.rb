@@ -15,14 +15,15 @@ class RedmineUrlsPlugin < Plugin
 		:default => [], :requires_restart => false,
 		:desc => "A map of channels to the base Redmine URL that should be used " +
 		         "in that channel.  Format for each entry in the list is " +
-		         "#channel:http://redmine.site/to/use.  Don't put a trailing " +
-		         "slash on the base URL, please.")
+		         "#channel:http://redmine.site/to/use. Enclose each option in double quotes " +
+                         "and don't put a trailing slash on the base URL, please.")
 
         Config.register Config::ArrayValue.new('redmine_urls.projectmap',
                 :default => [], :requires_restart => false,
                 :desc => "A map of channels to Redmine projects to be queried " +
                          "in that channel.  Format for each entry in the list is " +
-                         "#channel:project.  This setting is needed for wiki and changeset " +
+                         "#channel:project. Please enclose each entry in double quotes. " +
+                         "This setting is needed for wiki and changeset " +
                          "queries where the project name is embedded in the query " +
                          "Currently only one project can be monitored per channel.")
 
