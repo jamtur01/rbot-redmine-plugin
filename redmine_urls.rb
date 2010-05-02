@@ -156,16 +156,18 @@ class RedmineUrlsPlugin < Plugin
         # Get the project name for the channel
         #
         def project_channel(target)
-               p = @bot.config['redmine_urls.projectmap'].find {|p| p =~ /^#{target}:/ }
-               p.gsub!(/^#{target}:/, '') unless p.nil?
+               @bot.config['redmine_urls.projectmap'].each { |l|
+                     l.scan(/^#{target}\:(.+)/) { |w| return $1 }
+               }
         end
-
+     
 	# Return the base URL for the channel (passed in as +target+), or +nil+
 	# if the channel isn't in the channelmap.
 	#
 	def base_url(target)
-		e = @bot.config['redmine_urls.channelmap'].find {|c| c =~ /^#{target}:/ }
-		e.gsub!(/^#{target}:/, '') unless e.nil?
+             @bot.config['redmine_urls.channelmap'].each { |l|
+                   l.scan(/^#{target}\:(.+)/) { |w| return $1 }
+             }
 	end
 	
 	def rev_url(base_url, project, num)
@@ -197,8 +199,10 @@ class RedmineUrlsPlugin < Plugin
 	#
 	def expand_reference(ref, channel)
 		debug "Expanding reference #{ref} in #{channel}"
-		base = base_url(channel)
+                base = base_url(channel)
                 project = project_channel(channel)
+               
+                debug "The base url for #{channel} and #{project} is #{base}" 
 
 		# If we're not in a channel with a mapped base URL...
 		return [nil, "I don't know about Redmine URLs for this channel - please add a channelmap for this channel"] if base.nil?
