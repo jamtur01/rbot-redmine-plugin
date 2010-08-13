@@ -1,7 +1,6 @@
-# redmine_urls crudely updated by James Turnbull 
+# redmine_urls crudely updated by James Turnbull
 # based on trac_urls written by wombie
 # Needs to go in the plugins dir for rbot
-
 
 require 'rubygems'
 require 'mechanize'
@@ -30,7 +29,7 @@ class RedmineUrlsPlugin < Plugin
 	Config.register Config::StringValue.new('redmine_urls.auth_user',
 		:default => nil, :requires_restart => false,
 		:desc => "Username for Redmine authentification")
-	
+
         Config.register Config::StringValue.new('redmine_urls.auth_pass',
 		:default => nil, :requires_restart => false,
 		:desc => "Password for Redmine authentification")
@@ -42,16 +41,16 @@ class RedmineUrlsPlugin < Plugin
 				"I will watch the channel for likely references (see subtopic " +
 				"'general'), and also respond to specific requests (see " +
 				"subtopic 'queries')."
-			
+
 			when 'general':
 				"I can convert common references into URLs when I " +
 				"see them mentioned in conversation.  Currently supports " +
-				"[NNN], rNNN => revision URL; changeset:NNN|SHA => revision URL;" + 
+				"[NNN], rNNN => revision URL; changeset:NNN|SHA => revision URL;" +
                                 "#NN => bug URL; wiki:CamelCase => wiki URL." +
                                 "URLs are verified before they're sent to the channel, to limit noise." +
                                 "I will not respond to general references if you are talking to me directly!" +
                                 "See subtopic 'queries' for help with direct querying."
-			
+
 			when 'queries':
 				"You can ask me to lookup some info about a Redmine bug, " +
 				"changeset, or wiki page.  I'll give you the URL and the title " +
@@ -61,15 +60,15 @@ class RedmineUrlsPlugin < Plugin
 				"#93' will produce a URL and the ticket's title."
 		end
 	end
-	
+
 	def listen(m)
 		# We're a conversation watcher, dammit, don't talk to me!
 		return if m.address?
-		
+
 		# We don't handle private messages just yet, and we only handle regular
 		# chat messages
 		return unless m.kind_of?(PrivMessage) && m.public?
-		
+
 		refs = m.message.scan(/(?:^|\W)(\[\S+\]|r\d+|\#\d+|wiki:\w+\#?\w+|commit:\w+|changeset:\w+)(?:$|\W)/).flatten
 
 		# Do we have at least one possible reference?
@@ -77,7 +76,7 @@ class RedmineUrlsPlugin < Plugin
 
 		refs.each do |ref|
 			debug "We're out to handle '#{ref}'"
-		
+
 			url, title = expand_reference(ref, m.target)
 
 			return unless url
@@ -88,7 +87,7 @@ class RedmineUrlsPlugin < Plugin
 			else
 				addressee = "#{m.sourcenick}: "
 			end
-			
+
 			# So we have a valid URL, and addressee, and now we just have to... speak!
 			m.reply "#{addressee}#{ref} is #{url}" + (title.nil? ? '' : " \"#{title}\"")
 		end
@@ -100,7 +99,7 @@ class RedmineUrlsPlugin < Plugin
 		m.reply "I can't do redmineinfo in private yet" and return unless m.public?
 
 		url, title = expand_reference(params[:ref], m.target)
-		
+
 		if url.nil?
 			# Error!  The user-useful error message is in the 'title'
 			m.reply "#{m.sourcenick}: #{title}" if title
@@ -108,7 +107,7 @@ class RedmineUrlsPlugin < Plugin
 			m.reply "#{m.sourcenick}: #{params[:ref]} is #{url}" + (title ? " \"#{title}\"" : '')
 		end
 	end
-	
+
 	private
 	# Parse the Redmine reference given in +ref+, and try to construct a URL
 	# from +base+ to the resource.  Returns an array containing the URL
@@ -119,16 +118,16 @@ class RedmineUrlsPlugin < Plugin
 		case ref
 			when /\[(\S+)\]/:
 				[rev_url(base, project, $1), :changeset]
-			
+
 			when /r(\d+)/:
 				[rev_url(base, project, $1), :changeset]
-		
+
                         when /changeset:(\w+)/:
                                 [rev_url(base, project, $1), :changeset]
 
                         when /commit:(\w+)/:
                                 [rev_url(base, project, $1), :changeset]
-	
+
 			when /\#(\d+)/:
 				[bug_url(base, project, $1), :ticket]
 
@@ -160,7 +159,7 @@ class RedmineUrlsPlugin < Plugin
                      l.scan(/^#{target}\:(.+)/) { |w| return $1 }
                }
         end
-     
+
 	# Return the base URL for the channel (passed in as +target+), or +nil+
 	# if the channel isn't in the channelmap.
 	#
@@ -169,15 +168,15 @@ class RedmineUrlsPlugin < Plugin
                    l.scan(/^#{target}\:(.+)/) { |w| return $1 }
              }
 	end
-	
+
 	def rev_url(base_url, project, num)
 		base_url + '/repositories/revision/' + project + '/' + num
 	end
-	
+
 	def bug_url(base_url, project, num)
 		base_url + '/issues/show/' + num
 	end
-	
+
 	def wiki_url(base_url, project, page)
 		base_url + '/projects/' + project + '/wiki/' + page
 	end
@@ -201,8 +200,8 @@ class RedmineUrlsPlugin < Plugin
 		debug "Expanding reference #{ref} in #{channel}"
                 base = base_url(channel)
                 project = project_channel(channel)
-               
-                debug "The base url for #{channel} and #{project} is #{base}" 
+
+                debug "The base url for #{channel} and #{project} is #{base}"
 
 		# If we're not in a channel with a mapped base URL...
 		return [nil, "I don't know about Redmine URLs for this channel - please add a channelmap for this channel"] if base.nil?
@@ -224,7 +223,7 @@ class RedmineUrlsPlugin < Plugin
 				page_element_contents(url, 'h1')
 				nil
 			end
-			
+
 			[url, content]
 		rescue InvalidRedmineUrl => e
 			error("InvalidRedmineUrl returned: #{e.message}")
@@ -248,7 +247,7 @@ class RedmineUrlsPlugin < Plugin
 
                 auth_user = @bot.config['redmine_urls.auth_user']
                 auth_pass = @bot.config['redmine_urls.auth_pass']
-                
+
                 if auth_user && auth_pass
                     host = base + '/login/'
                     login = a.get(host).forms[1]
@@ -258,9 +257,10 @@ class RedmineUrlsPlugin < Plugin
                 end
 
                 @page  = a.get(url)
-               
+
+                raise InvalidRedmineUrl.new("#{url} returned redirect to #{page.header['Location']}") if @page.code == '302'
                 raise InvalidRedmineUrl.new("#{url} returned response code #{page.code}.") unless @page.code == '200'
-		
+                
                 elem = @page.search(css_query).first
 		unless elem
 			warning("Didn't find '#{css_query}' in page.")
