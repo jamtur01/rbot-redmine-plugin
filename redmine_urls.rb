@@ -73,7 +73,7 @@ class RedmineUrlsPlugin < Plugin
 		# chat messages
 		return unless m.kind_of?(PrivMessage) && m.public?
 
-		refs = m.message.scan(/(?:^|\W)(\[\S+\]|r\d+|\#\d+|wiki:\w+\#?\w+|commit:\w+|changeset:\w+)(?:$|\W)/).flatten
+		refs = m.message.scan(/(?:^|\W)(\[\S+\]|r\d+|\#\d+|wiki:(\S+\#?\S+)|commit:\w+|changeset:\w+)(?:$|\W)/).flatten
 
 		# Do we have at least one possible reference?
 		return unless refs.length > 0
@@ -120,7 +120,7 @@ class RedmineUrlsPlugin < Plugin
 			when /\#(\d+)/:
 				[bug_url(base, project, $1), :ticket]
 
-                        when /wiki:(\w+\#?\w+)/:
+                        when /wiki:(\S+\#?\S+)/:
                                 [wiki_url(base, project, $1), :wiki]
 		end
 	end
@@ -255,20 +255,20 @@ class RedmineUrlsPlugin < Plugin
 			warning("Didn't find '#{css_query}' in page.")
 			return
 		end
-	
+
                 elem = elem.inner_text.gsub("\n", ' ').gsub(/\s+/, ' ').strip
                 debug("Found '#{elem}' with '#{css_query}'")
-	
+
                 if reftype == :ticket && @bot.config['redmine_urls.extra_issue_information'] == true
                         assigned = @page.search('//td[@class = "assigned-to"]').first.inner_text
                         assigned = "Unassigned" if assigned.nil?
                         status = @page.search('//td[@class = "status"]').first.inner_text
                         debug("Found issue has a status of #{status} and is assigned to #{assigned}")
                 end
-            
+
                 if assigned && status
-                       elem = elem.gsub(/^(.+\-.+)\s\-\s.+$/, '\1. ') + "It has a status of #{status} and is assigned to #{assigned}"	
-                else 
+                       elem = elem.gsub(/^(.+\-.+)\s\-\s.+$/, '\1. ') + "It has a status of #{status} and is assigned to #{assigned}"
+                else
                        elem
                 end
         end
