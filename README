@@ -18,6 +18,8 @@ redmine_urls.auth_user - Username for basic http authentification to the Redmine
 
 redmine_urls.auth_pass - Password for basic http authentification to the Redmine site
 
+redmine_urls.extra_issue_information - Set to true to return ticket status and assignee in addition to URL and title.  Defaults to false.
+
 conf.yaml:
 
 redmine_urls.channelmap:

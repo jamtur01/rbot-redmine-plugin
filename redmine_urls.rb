@@ -34,6 +34,10 @@ class RedmineUrlsPlugin < Plugin
 		:default => nil, :requires_restart => false,
 		:desc => "Password for Redmine authentification")
 
+       Config.register Config::StringValue.new('redmine_urls.extra_issue_information',
+                :default => false, :requires_restart => false,
+                :desc => "Return issue status and assignee")
+
 	def help(plugin, topic = "")
 		case topic
 			when '':
@@ -93,21 +97,6 @@ class RedmineUrlsPlugin < Plugin
 		end
 	end
 
-	def redmineinfo(m, params)
-		debug("Handling redmineinfo request; params is #{params.inspect}")
-		return unless m.kind_of?(PrivMessage)
-		m.reply "I can't do redmineinfo in private yet" and return unless m.public?
-
-		url, title = expand_reference(params[:ref], m.target)
-
-		if url.nil?
-			# Error!  The user-useful error message is in the 'title'
-			m.reply "#{m.sourcenick}: #{title}" if title
-		else
-			m.reply "#{m.sourcenick}: #{params[:ref]} is #{url}" + (title ? " \"#{title}\"" : '')
-		end
-	end
-
 	private
 	# Parse the Redmine reference given in +ref+, and try to construct a URL
 	# from +base+ to the resource.  Returns an array containing the URL
@@ -147,7 +136,7 @@ class RedmineUrlsPlugin < Plugin
 				'h2'
 			when :ticket:
 				'title'
-			else
+       		        else
 				warning "Unknown reftype: #{reftype}"; nil
 		end
 	end
@@ -216,8 +205,8 @@ class RedmineUrlsPlugin < Plugin
 
 			content = unless css_query.nil?
 				# Rip up the page and tell us what you saw
-				page_element_contents(base, url, css_query)
-			else
+                                page_element_contents(base, url, css_query, reftype)
+                        else
 				# We don't know how to get meaningful info out of this page, so
 				# just validate that it actually loads
 				page_element_contents(url, 'h1')
@@ -239,7 +228,7 @@ class RedmineUrlsPlugin < Plugin
 	# the given +url+, or else raise InvalidRedmineUrl if the page doesn't
 	# respond with 200 OK.
 	#
-	def page_element_contents(base, url, css_query)
+	def page_element_contents(base, url, css_query, reftype)
                 Mechanize::Mechanize.html_parser = Nokogiri::HTML
                 a = Mechanize::Mechanize.new { |agent|
                     agent.user_agent_alias = 'Mac Safari'
@@ -260,15 +249,29 @@ class RedmineUrlsPlugin < Plugin
 
                 raise InvalidRedmineUrl.new("#{url} returned redirect to #{page.header['Location']}") if @page.code == '302'
                 raise InvalidRedmineUrl.new("#{url} returned response code #{page.code}.") unless @page.code == '200'
-                
+
                 elem = @page.search(css_query).first
 		unless elem
 			warning("Didn't find '#{css_query}' in page.")
 			return
 		end
-		debug("Found '#{elem.inner_text}' with '#{css_query}'")
-		elem.inner_text.gsub("\n", ' ').gsub(/\s+/, ' ').strip
-	end
+	
+                elem = elem.inner_text.gsub("\n", ' ').gsub(/\s+/, ' ').strip
+                debug("Found '#{elem}' with '#{css_query}'")
+	
+                if reftype == :ticket && @bot.config['redmine_urls.extra_issue_information'] == true
+                        assigned = @page.search('//td[@class = "assigned-to"]').first.inner_text
+                        assigned = "Unassigned" if assigned.nil?
+                        status = @page.search('//td[@class = "status"]').first.inner_text
+                        debug("Found issue has a status of #{status} and is assigned to #{assigned}")
+                end
+            
+                if assigned && status
+                       elem = elem.gsub(/^(.+\-.+)\s\-\s.+$/, '\1. ') + "It has a status of #{status} and is assigned to #{assigned}"	
+                else 
+                       elem
+                end
+        end
 end
 
 plugin = RedmineUrlsPlugin.new
