@@ -73,7 +73,7 @@ class RedmineUrlsPlugin < Plugin
 		# chat messages
 		return unless m.kind_of?(PrivMessage) && m.public?
 
-		refs = m.message.scan(/(?:^|\W)(\[\S+\]|r\d+|\#\d+|wiki:(\S+\#?\S+)|commit:\w+|changeset:\w+)(?:$|\W)/).flatten
+		refs = m.message.scan(/(?:^|\W)(\[\b[0-9a-f]{5,40}\b\]|r\d+|\#\d+|wiki:(\S+\#?\S+)|commit:\w+|changeset:\w+)(?:$|\W)/).flatten
 
 		# Do we have at least one possible reference?
 		return unless refs.length > 0
@@ -105,7 +105,7 @@ class RedmineUrlsPlugin < Plugin
 	#
 	def ref_into_url(base, project, ref)
 		case ref
-			when /\[(\S+)\]/:
+			when /\[(\b[0-9a-f]{5,40}\b)\]/:
 				[rev_url(base, project, $1), :changeset]
 
 			when /r(\d+)/:
