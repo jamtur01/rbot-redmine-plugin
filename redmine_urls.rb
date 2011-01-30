@@ -229,8 +229,8 @@ class RedmineUrlsPlugin < Plugin
 	# respond with 200 OK.
 	#
 	def page_element_contents(base, url, css_query, reftype)
-                Mechanize::Mechanize.html_parser = Nokogiri::HTML
-                a = Mechanize::Mechanize.new { |agent|
+                Mechanize.html_parser = Nokogiri::HTML
+                a = Mechanize.new { |agent|
                     agent.user_agent_alias = 'Mac Safari'
                 }
 
