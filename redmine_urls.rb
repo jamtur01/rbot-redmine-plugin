@@ -79,7 +79,9 @@ class RedmineUrlsPlugin < Plugin
 		return unless refs.length > 0
 
 		refs.each do |ref|
-			debug "We're out to handle '#{ref}'"
+			return if ref.nil?
+
+                        debug "We're out to handle '#{ref}'"
 
 			url, title = expand_reference(ref, m.target)
 
@@ -144,18 +146,16 @@ class RedmineUrlsPlugin < Plugin
         # Get the project name for the channel
         #
         def project_channel(target)
-               @bot.config['redmine_urls.projectmap'].each { |l|
-                     l.scan(/^#{target}\:(.+)/) { |w| return $1 }
-               }
+               e = @bot.config['redmine_urls.projectmap'].find {|c| c =~ /^#{target}:/ }
+               e.gsub(/^#{target}:/, '') unless e.nil?
         end
 
 	# Return the base URL for the channel (passed in as +target+), or +nil+
 	# if the channel isn't in the channelmap.
 	#
 	def base_url(target)
-             @bot.config['redmine_urls.channelmap'].each { |l|
-                   l.scan(/^#{target}\:(.+)/) { |w| return $1 }
-             }
+               e = @bot.config['redmine_urls.channelmap'].find {|c| c =~ /^#{target}:/ }
+               e.gsub(/^#{target}:/, '') unless e.nil?
 	end
 
 	def rev_url(base_url, project, num)
@@ -190,14 +190,13 @@ class RedmineUrlsPlugin < Plugin
                 base = base_url(channel)
                 project = project_channel(channel)
 
-                debug "The base url for #{channel} and #{project} is #{base}"
-
 		# If we're not in a channel with a mapped base URL...
-		return [nil, "I don't know about Redmine URLs for this channel - please add a channelmap for this channel"] if base.nil?
+		return "I don't know about Redmine URLs for this channel - please add a channelmap for this channel" if base.nil?
 
                 # If we're in a channel without a mapped project...
-                return [nil, "I don't have a project map for this channel - please add a projectmap for this channel"] if project.nil?
+                return "I don't have a project map for this channel - please add a projectmap for this channel" if project.nil?
 
+                debug "The base url for #{channel} and #{project} is #{base}"
 
 		begin
 			url, reftype = ref_into_url(base, project, ref)
