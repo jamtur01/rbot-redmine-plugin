@@ -66,7 +66,9 @@ class RedmineUrlsPlugin < Plugin
 	end
 
 	def listen(m)
-		# We're a conversation watcher, dammit, don't talk to me!
+		return if valid_channel(m.target).nil?
+
+                # We're a conversation watcher, dammit, don't talk to me!
 		return if m.address?
 
 		# We don't handle private messages just yet, and we only handle regular
@@ -142,6 +144,10 @@ class RedmineUrlsPlugin < Plugin
 				warning "Unknown reftype: #{reftype}"; nil
 		end
 	end
+
+        def valid_channel(target)
+               e = @bot.config['redmine_urls.projectmap'].find {|c| c =~ /^#{target}:/ }
+        end
 
         # Get the project name for the channel
         #
